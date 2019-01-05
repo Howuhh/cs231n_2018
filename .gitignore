@@ -1,0 +1,5 @@
+# zips
+*.zip
+
+# mac staff
+.DS_Store
