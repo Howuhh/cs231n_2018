@@ -3,3 +3,6 @@
 
 # mac staff
 .DS_Store
+
+#env
+.python-version
