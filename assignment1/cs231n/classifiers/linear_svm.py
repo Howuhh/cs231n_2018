@@ -1,7 +1,7 @@
 import numpy as np
 from random import shuffle
 
-def svm_loss_naive(W, X, y, reg):
+def svm_loss_naive(W, X, y, reg, debug=False):
   """
   Structured SVM loss function, naive implementation (with loops).
 
@@ -27,20 +27,27 @@ def svm_loss_naive(W, X, y, reg):
   loss = 0.0
   for i in range(num_train):
     scores = X[i].dot(W)
+    if debug:
+      print("scores: ", scores)
+
     correct_class_score = scores[y[i]]
     for j in range(num_classes):
       if j == y[i]:
         continue
       margin = scores[j] - correct_class_score + 1 # note delta = 1
+      if debug:
+        print(f"Margin of class {j}: ", margin)
       if margin > 0:
         loss += margin
 
   # Right now the loss is a sum over all training examples, but we want it
   # to be an average instead so we divide by num_train.
   loss = loss / num_train
+  if debug:
+    print(loss)
 
   # Add regularization to the loss.
-  loss += reg * np.sum(W * W)
+  loss = loss + reg * np.sum(W * W)
 
   #############################################################################
   # TODO:                                                                     #
@@ -72,11 +79,11 @@ def svm_loss_vectorized(W, X, y, reg):
   y_pred_true = scores[np.arange(len(scores)), y].reshape(-1, 1)
 
   margins = np.maximum(0, scores - y_pred_true + delta)
-  margins[np.arange(len(scores)), y].reshape(-1, 1) = 0
+  margins[np.arange(len(scores)), y] = 0
 
-  margin_sums = np.sum(margins, axis=1)
-  loss = np.divide(np.sum(maring_sums), X.shape[0])
-  loss = loss * np.sum(W * W)
+  loss = np.sum(margins) / X.shape[0]
+  print(loss)
+  loss = loss + reg * np.sum(W * W)
 
   #############################################################################
   #                             END OF YOUR CODE                              #
