@@ -31,17 +31,28 @@ def softmax_loss_naive(W, X, y, reg):
   #############################################################################
   scores = X.dot(W)
 
-  for indx, score_row in enumerate(scores):
+  for i, score_row in enumerate(scores):
     scores_scaled = score_row - score_row.max()
     prob = np.exp(scores_scaled) / np.sum(np.exp(scores_scaled))
   
-    loss += -np.log(prob[y[indx]] + 1e-7)
+    loss += -np.log(prob[y[i]] + 1e-7)
+
+    for class_ in range(W.shape[1]):
+      if class_ == y[i]:
+        dW[:, y[i]] += X[i] * (prob[y[i]] - 1)
+      else:
+        dW[:, class_] += X[i] * prob[class_]
 
   #############################################################################
   #                          END OF YOUR CODE                                 #
   #############################################################################
+  
   loss = loss / X.shape[0]
-  loss = loss + reg * np.sum(X*X )
+  loss = loss + reg * np.sum(X*X)
+  
+  dW = dW / X.shape[0]
+  dW = dW + 2 * reg * W 
+  
 
   return loss, dW
 
@@ -67,9 +78,16 @@ def softmax_loss_vectorized(W, X, y, reg):
 
   probs = scores_scaled_exp / scores_scaled_exp.sum(axis=1, keepdims=True)
 
-  loss = -np.sum(np.log(probs[np.arange(len(scores)), y]))
+  loss = -np.sum(np.log(probs[np.arange(len(scores)), y] + 1e-7))
+  
   loss = loss / X.shape[0]
   loss = loss + reg * np.sum(X*X)
+
+
+  probs[np.arange(len(scores)), y] -= 1
+  dW = X.T.dot(probs) / X.shape[0]
+  dW = dW + 2 * reg * W
+
   #############################################################################
   #                          END OF YOUR CODE                                 #
   #############################################################################

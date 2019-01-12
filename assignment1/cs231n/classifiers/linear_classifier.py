@@ -68,6 +68,8 @@ class LinearClassifier(object):
       # Update the weights using the gradient and the learning rate.          #
       #########################################################################
       self.W = self.W - (learning_rate * grad)
+      self.lr = learning_rate
+      self.reg = reg
       #########################################################################
       #                       END OF YOUR CODE                                #
       #########################################################################
