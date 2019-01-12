@@ -29,10 +29,19 @@ def softmax_loss_naive(W, X, y, reg):
   # here, it is easy to run into numeric instability. Don't forget the        #
   # regularization!                                                           #
   #############################################################################
-  pass
+  scores = X.dot(W)
+
+  for indx, score_row in enumerate(scores):
+    scores_scaled = score_row - score_row.max()
+    prob = np.exp(scores_scaled) / np.sum(np.exp(scores_scaled))
+  
+    loss += -np.log(prob[y[indx]] + 1e-7)
+
   #############################################################################
   #                          END OF YOUR CODE                                 #
   #############################################################################
+  loss = loss / X.shape[0]
+  loss = loss + reg * np.sum(X*X )
 
   return loss, dW
 
@@ -53,7 +62,14 @@ def softmax_loss_vectorized(W, X, y, reg):
   # here, it is easy to run into numeric instability. Don't forget the        #
   # regularization!                                                           #
   #############################################################################
-  pass
+  scores = X.dot(W)
+  scores_scaled_exp = np.exp(scores - scores.max(axis=1, keepdims=True))
+
+  probs = scores_scaled_exp / scores_scaled_exp.sum(axis=1, keepdims=True)
+
+  loss = -np.sum(np.log(probs[np.arange(len(scores)), y]))
+  loss = loss / X.shape[0]
+  loss = loss + reg * np.sum(X*X)
   #############################################################################
   #                          END OF YOUR CODE                                 #
   #############################################################################
