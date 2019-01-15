@@ -75,7 +75,29 @@ class TwoLayerNet(object):
     # Store the result in the scores variable, which should be an array of      #
     # shape (N, C).                                                             #
     #############################################################################
-    pass
+    def ReLU(scores):
+      """
+        Activation function 
+      """
+      return np.maximum(0, scores)
+    
+
+    def softmax(scores):
+      """ 
+        Compute softmax for vector of scores
+      """
+      scores = scores - scores.max(axis=1, keepdims=True)
+
+      return np.exp(scores) / np.sum(np.exp(scores), axis=1, keepdims=True)
+
+
+    # input - fully connected layer - ReLU - fully connected layer - softmax
+
+    h1 = X.dot(W1) + b1 # (N, D) * (D, H) = (N, H)
+    h1_relu = ReLU(h1)
+    h2 = h1_relu.dot(W2) + b2 # (N, H) * (H, C) = (N, C)
+    scores = h2
+
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
@@ -92,7 +114,11 @@ class TwoLayerNet(object):
     # in the variable loss, which should be a scalar. Use the Softmax           #
     # classifier loss.                                                          #
     #############################################################################
-    pass
+    probs = softmax(scores)
+    loss = -np.sum(np.log(probs[range(N), y]))
+    
+    R = reg * (np.sum(W1 * W1) + np.sum(W2 * W2))
+    loss = np.divide(loss, N) + R
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
@@ -104,7 +130,25 @@ class TwoLayerNet(object):
     # and biases. Store the results in the grads dictionary. For example,       #
     # grads['W1'] should store the gradient on W1, and be a matrix of same size #
     #############################################################################
-    pass
+  
+    probs[range(N), y] += -1
+
+    dW2 = h1_relu.T.dot(probs) / N  # (H, N) * (N, C) == (H, C)
+    dW2 = dW2 + 2 * reg * W2
+    db2 = probs.T.dot(np.ones(N))  # (C, N)  * (N, 1) == (C, 1)
+    db2 = db2 / N
+
+    grads["W2"] = dW2
+    grads["b2"] = db2 
+
+    dReLU = probs.dot(W2.T) # (N, C) * (C, H) == (N, H)
+
+    dW1 = X.T.dot(dReLU) / N # (D, N) * (N, H) == (D, H)
+    dW1 = dW1 + 2 * reg * W1
+
+    grads["W1"] = dW1 
+    grads["b1"] = np.zeros_like(b1)
+
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################

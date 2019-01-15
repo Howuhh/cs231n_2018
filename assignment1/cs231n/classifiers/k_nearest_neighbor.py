@@ -166,8 +166,10 @@ class KNearestNeighbor(object):
       # Store this label in y_pred[i]. Break ties by choosing the smaller     #
       # label.                                                                #
       #########################################################################
-      uniques, counts = np.unique(closest_y, return_counts=True)
-      y_pred[i] = uniques[counts.argmax()]
+      # uniques, counts = np.unique(closest_y, return_counts=True)
+      # y_pred[i] = uniques[counts.argmax()]
+
+      y_pred[i] = np.argmax(np.bincount(closest_y))
       #########################################################################
       #                           END OF YOUR CODE                            # 
       #########################################################################
