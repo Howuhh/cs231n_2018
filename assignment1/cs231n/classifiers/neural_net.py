@@ -3,6 +3,9 @@ from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
 
+def accuracy(y_true, y_pred):
+  return np.mean(y_pred == y_true)
+
 class TwoLayerNet(object):
   """
   A two-layer fully-connected neural network. The net has an input dimension of
@@ -40,6 +43,23 @@ class TwoLayerNet(object):
     self.params['W2'] = std * np.random.randn(hidden_size, output_size)
     self.params['b2'] = np.zeros(output_size)
 
+  # mb outside of the class?
+  @staticmethod
+  def ReLU(scores):
+    """
+      Activation function 
+    """
+    return np.maximum(0, scores)
+    
+  @staticmethod
+  def softmax(scores):
+    """ 
+      Compute softmax for vector of scores
+    """
+    scores = scores - scores.max(axis=1, keepdims=True)
+
+    return np.exp(scores) / np.sum(np.exp(scores), axis=1, keepdims=True)
+
   def loss(self, X, y=None, reg=0.0):
     """
     Compute the loss and gradients for a two layer fully connected neural
@@ -75,26 +95,11 @@ class TwoLayerNet(object):
     # Store the result in the scores variable, which should be an array of      #
     # shape (N, C).                                                             #
     #############################################################################
-    def ReLU(scores):
-      """
-        Activation function 
-      """
-      return np.maximum(0, scores)
-    
-
-    def softmax(scores):
-      """ 
-        Compute softmax for vector of scores
-      """
-      scores = scores - scores.max(axis=1, keepdims=True)
-
-      return np.exp(scores) / np.sum(np.exp(scores), axis=1, keepdims=True)
-
 
     # input - fully connected layer - ReLU - fully connected layer - softmax
 
     h1 = X.dot(W1) + b1 # (N, D) * (D, H) = (N, H)
-    h1_relu = ReLU(h1)
+    h1_relu = TwoLayerNet.ReLU(h1)
     h2 = h1_relu.dot(W2) + b2 # (N, H) * (H, C) = (N, C)
     scores = h2
 
@@ -114,8 +119,8 @@ class TwoLayerNet(object):
     # in the variable loss, which should be a scalar. Use the Softmax           #
     # classifier loss.                                                          #
     #############################################################################
-    probs = softmax(scores)
-    loss = -np.sum(np.log(probs[range(N), y]))
+    probs = TwoLayerNet.softmax(scores)
+    loss = -np.sum(np.log(probs[range(N), y] + 1e-7))
     
     R = reg * (np.sum(W1 * W1) + np.sum(W2 * W2))
     loss = np.divide(loss, N) + R
@@ -198,7 +203,10 @@ class TwoLayerNet(object):
       # TODO: Create a random minibatch of training data and labels, storing  #
       # them in X_batch and y_batch respectively.                             #
       #########################################################################
-      pass
+      batch_index = np.random.choice(num_train, batch_size)
+      X_batch = X[batch_index]
+      y_batch = y[batch_index]
+
       #########################################################################
       #                             END OF YOUR CODE                          #
       #########################################################################
@@ -213,7 +221,8 @@ class TwoLayerNet(object):
       # using stochastic gradient descent. You'll need to use the gradients   #
       # stored in the grads dictionary defined above.                         #
       #########################################################################
-      pass
+      for param, grad in grads.items():
+        self.params[param] += -(learning_rate * grad)
       #########################################################################
       #                             END OF YOUR CODE                          #
       #########################################################################
@@ -224,8 +233,8 @@ class TwoLayerNet(object):
       # Every epoch, check train and val accuracy and decay learning rate.
       if it % iterations_per_epoch == 0:
         # Check accuracy
-        train_acc = (self.predict(X_batch) == y_batch).mean()
-        val_acc = (self.predict(X_val) == y_val).mean()
+        train_acc = accuracy(y_batch, self.predict(X_batch))
+        val_acc = accuracy(y_val, self.predict(X_val))
         train_acc_history.append(train_acc)
         val_acc_history.append(val_acc)
 
@@ -258,7 +267,8 @@ class TwoLayerNet(object):
     ###########################################################################
     # TODO: Implement this function; it should be VERY simple!                #
     ###########################################################################
-    pass
+    scores = TwoLayerNet.softmax(self.loss(X))
+    y_pred = scores.argmax(axis=1)
     ###########################################################################
     #                              END OF YOUR CODE                           #
     ###########################################################################
