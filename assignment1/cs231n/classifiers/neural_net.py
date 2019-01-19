@@ -130,24 +130,30 @@ class TwoLayerNet(object):
     # and biases. Store the results in the grads dictionary. For example,       #
     # grads['W1'] should store the gradient on W1, and be a matrix of same size #
     #############################################################################
-  
+    # softmax + loss gradient
     probs[range(N), y] += -1
-
+    # summ all row scores with probs for C_i class
     dW2 = h1_relu.T.dot(probs) / N  # (H, N) * (N, C) == (H, C)
     dW2 = dW2 + 2 * reg * W2
+
+    # summ all prob scores for C_i row with coef 1 for b_i
     db2 = probs.T.dot(np.ones(N))  # (C, N)  * (N, 1) == (C, 1)
     db2 = db2 / N
 
-    grads["W2"] = dW2
-    grads["b2"] = db2 
-
-    dReLU = probs.dot(W2.T) # (N, C) * (C, H) == (N, H)
+    dLdReLU = probs.dot(W2.T) # (N, C) * (C, H) == (N, H)
+    dReLUdH1 = np.where(h1 < 0, 0, 1) # (N, H)
+    dReLU = dLdReLU * dReLUdH1
 
     dW1 = X.T.dot(dReLU) / N # (D, N) * (N, H) == (D, H)
     dW1 = dW1 + 2 * reg * W1
 
+    db1 = dReLU.T.dot(np.ones(N)) # (H, N) * (N, 1) == (H, )
+    db1 = db1 / N
+
+    grads["W2"] = dW2
+    grads["b2"] = db2
     grads["W1"] = dW1 
-    grads["b1"] = np.zeros_like(b1)
+    grads["b1"] = db1
 
     #############################################################################
     #                              END OF YOUR CODE                             #
