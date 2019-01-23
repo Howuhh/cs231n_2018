@@ -123,10 +123,10 @@ class TwoLayerNet(object):
         drelu = relu_backward(dh2, h1)
         dh1, dW1, db1 = affine_backward(drelu, (X, W1, b1))
 
-        self.params["W2"] = dW2 / X.shape[0] + self.reg * W2     
-        self.params["b2"] = db2 / X.shape[0]
-        self.params["W1"] = dW1 / X.shape[0] + self.reg * W1     
-        self.params["b1"] = db1 / X.shape[0]
+        grads["W2"] = dW2 / X.shape[0] + self.reg * W2     
+        grads["b2"] = db2 / X.shape[0]
+        grads["W1"] = dW1 / X.shape[0] + self.reg * W1     
+        grads["b1"] = db1 / X.shape[0]
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
