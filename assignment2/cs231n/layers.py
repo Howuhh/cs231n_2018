@@ -63,8 +63,7 @@ def affine_backward(dout, cache):
 
     dw = x_row.T.dot(dout) # (D, N) * (N, M) = (D, M)
     db = dout.T.dot(np.ones(x_shapes[0])) # (M, N) * (N, 1) = (M, )
-    dx = dout.dot(w.T) # (N, M) * (M, D) = (N, D)
-    dx = dx.reshape(*x_shapes)
+    dx = dout.dot(w.T).reshape(*x_shapes) # (N, M) * (M, D) = (N, D)
 
     ###########################################################################
     #                             END OF YOUR CODE                            #
