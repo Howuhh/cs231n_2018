@@ -1,8 +1,11 @@
 from __future__ import print_function, division
+
 from future import standard_library
 standard_library.install_aliases()
+
 from builtins import range
 from builtins import object
+
 import os
 import pickle as pickle
 
@@ -206,9 +209,9 @@ class Solver(object):
           'train_acc_history': self.train_acc_history,
           'val_acc_history': self.val_acc_history,
         }
-        filename = '%s_epoch_%d.pkl' % (self.checkpoint_name, self.epoch)
+        filename = f'{self.checkpoint_name}_epoch_{self.epoch}.pkl'
         if self.verbose:
-            print('Saving checkpoint to "%s"' % filename)
+            print(f'Saving checkpoint to "{filename}"')
         with open(filename, 'wb') as f:
             pickle.dump(checkpoint, f)
 
