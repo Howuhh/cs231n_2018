@@ -180,19 +180,19 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # variance, storing your result in the running_mean and running_var   #
         # variables.                                                          #
         #######################################################################
-        # print(x.shape)
         batch_mean, batch_var = np.mean(x, axis=0), np.var(x, axis=0)
         
-        x_scaled = (x - batch_mean) / (np.sqrt(batch_var) + eps)
+        x_shifted = x - batch_mean
+        sqrtvar = np.sqrt(batch_var + eps)
+        invar = 1 / sqrtvar
+
+        x_scaled = x_shifted * invar
         out = gamma * x_scaled + beta
-        
-        # print("mean", batch_mean.shape)
-        # print("var", batch_var.shape)
 
         running_mean = momentum * running_mean + (1 - momentum) * batch_mean
         running_var = momentum * running_var + (1 - momentum) * batch_var
 
-        cache = (x_scaled, batch_var, eps, gamma)
+        cache = (x_shifted, x_scaled, batch_var, invar, sqrtvar, gamma, eps)
         #######################################################################
         #                           END OF YOUR CODE                          #
         #######################################################################
@@ -240,22 +240,33 @@ def batchnorm_backward(dout, cache):
     # TODO: Implement the backward pass for batch normalization. Store the    #
     # results in the dx, dgamma, and dbeta variables.                         #
     ###########################################################################
-    x_scaled, var, eps, gamma = cache
-
-    dgamma = (dout * x_scaled).sum(axis=0) # (N, D) * (N, D) -> sum over cols
-    dbeta = dout.T.dot(np.ones(dout.shape[0])) # (D, N) * (N, 1) == (D, )
-
-    # # dydx_scaled
-    # dx_scaled = np.tile(gamma, (x_scaled.shape[0], 1))
-    # # dx_scalddx
-    # dx_scaleddx = 1 / np.sqrt(var + eps)
-    # # dmeandx
-    # dmeandx = 1 / x_scaled.shape[0] * - 1 / np.sqrt(var + eps) # dx_scaleddmean
-
-    # dx = dx_scaled * dx_scaleddx
-    # dx = dx + dmeandx + dvardx
+    x_shifted, x_scaled, var, invar, sqrtvar, gamma, eps = cache
+    N, D = dout.shape
 
 
+    dgamma = (dout * x_scaled).sum(axis=0) # (N, D) * (N, D) -> (D, )
+    dbeta = dout.sum(axis=0) # (N, D) == (D, )
+
+    # back for dx
+    # derivatives for mean + x_scaled nodes
+    dxhat = dout * gamma # (N, D)
+    dxu1 = dxhat * invar # (N, D)
+
+    # derivatives for var nodes
+    dinvar = (dxhat * x_shifted).sum(axis=0) # (D, )
+    dsqrtvar = (-1/sqrtvar**2) * dinvar # (D, )
+    dvar = 1/(2*sqrtvar) * dsqrtvar # (D,)
+    dsquare = 1/N * np.ones_like(dout) * dvar # (D, N)
+    dxu2 = 2 * x_shifted * dsquare # (D, N)
+
+    # derivatives for (x - mean) node
+    dx1 = dxu1 + dxu2 # (N, D)
+
+    # derivatives for mean node
+    dmean = (1 / N) * np.ones_like(dout)
+    dx2 = -1 * dx1.sum(axis=0) * dmean
+
+    dx = dx1 + dx2
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
