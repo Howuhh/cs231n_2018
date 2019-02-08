@@ -256,6 +256,7 @@ def batchnorm_backward(dout, cache):
     dinvar = (dxhat * x_shifted).sum(axis=0) # (D, )
     dsqrtvar = (-1/sqrtvar**2) * dinvar # (D, )
     dvar = 1/(2*sqrtvar) * dsqrtvar # (D,)
+
     dsquare = 1/N * np.ones_like(dout) * dvar # (D, N)
     dxu2 = 2 * x_shifted * dsquare # (D, N)
 
@@ -271,7 +272,7 @@ def batchnorm_backward(dout, cache):
     #                             END OF YOUR CODE                            #
     ###########################################################################
 
-    return dx, dgamma, dbeta
+    return dx, dgamma, dbeta 
 
 
 def batchnorm_backward_alt(dout, cache):
@@ -297,14 +298,14 @@ def batchnorm_backward_alt(dout, cache):
     # single statement; our implementation fits on a single 80-character line.#
     ###########################################################################
     N, D = dout.shape
-    x_scaled, var, eps, gamma = cache
+    _, x_scaled, _, _, sqrtvar, gamma, eps = cache
 
     dgamma = (dout * x_scaled).sum(axis=0) # (N, D) * (N, D) -> sum over cols
     dbeta = dout.T.dot(np.ones(dout.shape[0])) # (D, N) * (N, 1) == (D, )
 
     # chain rule magick 
     dx_scaled = dout * gamma
-    dx = (N*dx_scaled - dx_scaled.sum(axis=0) - x_scaled * (dx_scaled * x_scaled).sum(axis=0)) / (N * np.sqrt(var + eps))
+    dx = (N*dx_scaled - dx_scaled.sum(axis=0) - x_scaled * (dx_scaled * x_scaled).sum(axis=0)) / (N * sqrtvar)
 
     ###########################################################################
     #                             END OF YOUR CODE                            #

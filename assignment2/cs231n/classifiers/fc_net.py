@@ -38,7 +38,6 @@ class TwoLayerNet(object):
         """
         self.params = {}
         self.reg = reg
-
         ############################################################################
         # TODO: Initialize the weights and biases of the two-layer net. Weights    #
         # should be initialized from a Gaussian with standard deviation equal to   #
@@ -154,7 +153,7 @@ class FullyConnectedNet(object):
 
     def __init__(self, hidden_dims, input_dim=3*32*32, num_classes=10,
                  dropout=0, use_batchnorm=False, reg=0.0,
-                 weight_scale=1e-2, dtype=np.float32, seed=None):
+                 weight_scale=1e-2, dtype=np.float32, seed=None, debug=False):
         """
         Initialize a new FullyConnectedNet.
 
@@ -175,6 +174,7 @@ class FullyConnectedNet(object):
           will make the dropout layers deteriminstic so we can gradient check the
           model.
         """
+        self.debug = debug
         self.use_batchnorm = use_batchnorm
         self.use_dropout = dropout > 0
         self.reg = reg
@@ -199,13 +199,15 @@ class FullyConnectedNet(object):
         for layer_num in range(self.num_layers):
             self.params[f"W{layer_num + 1}"] = np.random.randn(dims[layer_num], dims[layer_num + 1]) * weight_scale
             self.params[f"b{layer_num + 1}"] = np.zeros(dims[layer_num + 1])
-            # TODO: gamma1, gamma2 init
-        
-        # print("-"*25)
-        # for k, v in self.params.items():
-        #     print(k, v.shape)
-        # print("-"*25)
+            if layer_num < self.num_layers - 1:
+                self.params[f"gamma{layer_num + 1}"] = np.ones(dims[layer_num + 1])
+                self.params[f"beta{layer_num + 1}"] = np.zeros(dims[layer_num + 1])
 
+        if self.debug:
+            print("*"*25)
+            for name, layer in self.params.items():
+                print(f"{name} shape: {layer.shape}")
+            print("*"*25)
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -270,20 +272,26 @@ class FullyConnectedNet(object):
             # init variables
             layer_pass = {}
             W_i, b_i = self.params[f"W{layer_num + 1}"], self.params[f"b{layer_num + 1}"]
+            if self.use_batchnorm and (layer_num < self.num_layers - 1):
+                gamma_i, beta_i = self.params[f"gamma{layer_num + 1}"], self.params[f"beta{layer_num + 1}"]
+
+            # init scores for pass
             scores = (X if layer_num == 0 else forward_pass[layer_num - 1]["scores_relu"])
-            # print(scores.shape)
-           
 
             # forward pass
             layer_pass["scores_aff"], layer_pass["cache_aff"] = affine_forward(scores, W_i, b_i)
             if layer_num < self.num_layers - 1:
-                layer_pass["scores_relu"], layer_pass["cache_relu"] = relu_forward(layer_pass["scores_aff"])
+                if self.use_batchnorm:
+                    # batchnorm + relu
+                    layer_pass["scores_scaled"], layer_pass["cache_batchnorm"] = batchnorm_forward(layer_pass["scores_aff"], gamma_i, beta_i, self.bn_params[layer_num])
+                    layer_pass["scores_relu"], layer_pass["cache_relu"] = relu_forward(layer_pass["scores_scaled"])
+                else:
+                    # relu
+                    layer_pass["scores_relu"], layer_pass["cache_relu"] = relu_forward(layer_pass["scores_aff"])
             forward_pass.append(layer_pass)
-
+        # softmaxs scores
         scores = forward_pass[self.num_layers - 1]["scores_aff"]
         softmax, dsoftmax = softmax_loss(scores, y)
-
-        # print(forward_pass)
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -316,9 +324,9 @@ class FullyConnectedNet(object):
         dout = dsoftmax.copy()
         for layer_num in range(self.num_layers - 1,  -1, -1):
             dout, grads[f"W{layer_num + 1}"], grads[f"b{layer_num + 1}"] = affine_backward(dout, forward_pass[layer_num]["cache_aff"])
-            
             if layer_num > 0:
                 dout = relu_backward(dout, forward_pass[layer_num - 1]["cache_relu"])
+                dout, grads[f"gamma{layer_num}"], grads[f"beta{layer_num}"] = batchnorm_backward_alt(dout, forward_pass[layer_num - 1]["cache_batchnorm"])
 
             grads[f"W{layer_num + 1}"] += self.reg * self.params[f"W{layer_num + 1}"]
 
