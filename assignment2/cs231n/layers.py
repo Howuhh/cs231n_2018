@@ -339,13 +339,16 @@ def dropout_forward(x, dropout_param):
 
     mask = None
     out = None
+    N, M = x.shape
 
     if mode == 'train':
         #######################################################################
         # TODO: Implement training phase forward pass for inverted dropout.   #
         # Store the dropout mask in the mask variable.                        #
         #######################################################################
-        pass
+        # TODO: check scaling with q = (1 - p)
+        mask = (np.random.rand(N, M) > p) / p
+        out = x * mask
         #######################################################################
         #                           END OF YOUR CODE                          #
         #######################################################################
@@ -353,7 +356,7 @@ def dropout_forward(x, dropout_param):
         #######################################################################
         # TODO: Implement the test phase forward pass for inverted dropout.   #
         #######################################################################
-        pass
+        out = x.copy()
         #######################################################################
         #                            END OF YOUR CODE                         #
         #######################################################################
@@ -380,12 +383,12 @@ def dropout_backward(dout, cache):
         #######################################################################
         # TODO: Implement training phase backward pass for inverted dropout   #
         #######################################################################
-        pass
+        dx = dout * mask
         #######################################################################
         #                          END OF YOUR CODE                           #
         #######################################################################
     elif mode == 'test':
-        dx = dout
+        dx = dout.copy()
     return dx
 
 
