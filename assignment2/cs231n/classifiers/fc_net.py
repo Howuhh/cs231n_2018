@@ -216,6 +216,7 @@ class FullyConnectedNet(object):
         # dropout layer so that the layer knows the dropout probability and the mode
         # (train / test). You can pass the same dropout_param to each dropout layer.
         self.dropout_param = {}
+        assert 0 <= dropout <= 1, "Invalid dropout prob!"
         if self.use_dropout:
             self.dropout_param = {'mode': 'train', 'p': dropout}
             if seed is not None:
@@ -285,10 +286,16 @@ class FullyConnectedNet(object):
                     # batchnorm + relu
                     layer_pass["scores_scaled"], layer_pass["cache_batchnorm"] = batchnorm_forward(layer_pass["scores_aff"], gamma_i, beta_i, self.bn_params[layer_num])
                     layer_pass["scores_relu"], layer_pass["cache_relu"] = relu_forward(layer_pass["scores_scaled"])
+                    if self.use_dropout:
+                        layer_pass["scores_relu"], layer_pass["cache_dropout"] = dropout_forward(layer_pass["scores_relu"], self.dropout_param)
                 else:
                     # relu
                     layer_pass["scores_relu"], layer_pass["cache_relu"] = relu_forward(layer_pass["scores_aff"])
+                    if self.use_dropout:
+                        layer_pass["scores_relu"], layer_pass["cache_dropout"] = dropout_forward(layer_pass["scores_relu"], self.dropout_param)
+
             forward_pass.append(layer_pass)
+        
         # softmaxs scores
         scores = forward_pass[self.num_layers - 1]["scores_aff"]
         softmax, dsoftmax = softmax_loss(scores, y)
@@ -325,9 +332,13 @@ class FullyConnectedNet(object):
         for layer_num in range(self.num_layers - 1,  -1, -1):
             dout, grads[f"W{layer_num + 1}"], grads[f"b{layer_num + 1}"] = affine_backward(dout, forward_pass[layer_num]["cache_aff"])
             if layer_num > 0:
+                if self.use_dropout:
+                    dout = dropout_backward(dout, forward_pass[layer_num - 1]["cache_dropout"])
                 dout = relu_backward(dout, forward_pass[layer_num - 1]["cache_relu"])
+                
                 if self.use_batchnorm:
                     dout, grads[f"gamma{layer_num}"], grads[f"beta{layer_num}"] = batchnorm_backward_alt(dout, forward_pass[layer_num - 1]["cache_batchnorm"])
+
 
             grads[f"W{layer_num + 1}"] += self.reg * self.params[f"W{layer_num + 1}"]
 
